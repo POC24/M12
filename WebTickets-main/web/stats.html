@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estatísticas — Gestor de Tickets</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar para o conteúdo</a>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Navegação principal">
+      <div class="nav__inner">
+        <a class="brand" href="./index.html" aria-label="Ir para a página principal">
+          <span class="brand__mark" aria-hidden="true">📒</span>
+          <span class="brand__text">Gestor de Tickets</span>
+        </a>
+
+        <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navMenu">
+          <span class="sr-only">Abrir menu</span>
+          <span class="burger" aria-hidden="true"></span>
+        </button>
+
+        <ul class="nav__menu" id="navMenu">
+          <li><a class="nav__link" href="./index.html">Tickets</a></li>
+          <li><a class="nav__link is-active" href="./stats.html">Estatísticas</a></li>
+          <li id="logsNavItem" style="display:none"><a class="nav__link" href="./logs.html">Logs</a></li>
+          <li><a class="nav__link" href="./about.html">Sobre</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" class="container">
+    <section class="hero">
+      <div class="hero__text">
+        <h1>Dashboard</h1>
+      </div>
+      <div class="hero__actions">
+        <button class="btn btn--primary" id="reloadBtn" type="button">Recarregar</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Estado do Servidor</h2>
+      </div>
+
+      <div class="cards cards--stats">
+        <article class="card">
+          <h3>Health</h3>
+          <p class="big" id="healthText">—</p>
+          <p class="muted" id="healthDetail">—</p>
+        </article>
+
+        <article class="card">
+          <h3>Total</h3>
+          <p class="big" id="totalTickets">—</p>
+          <p class="muted">Todos os tickets</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Tickets por Status</h2>
+      </div>
+
+      <div class="cards cards--stats" id="statusCards"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Tickets por Prioridade</h2>
+      </div>
+
+      <div class="cards cards--stats" id="priorityCards"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Tickets Recentes</h2>
+      </div>
+
+      <div class="statusline" aria-live="polite" aria-atomic="true">
+        <span id="loadingInline" class="inline-loading is-hidden">A carregar…</span>
+      </div>
+
+      <div class="cards" id="recentGrid"></div>
+
+      <div class="empty is-hidden" id="recentEmpty">
+        <p><strong>Sem tickets recentes.</strong></p>
+        <p class="muted">Não foram encontrados tickets nos últimos 7 dias.</p>
+      </div>
+    </section>
+
+    <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer__inner">
+      <p class="muted">© <span id="year"></span> Gestor de Tickets — HTML5, CSS3 e JavaScript</p>
+      <ul class="footer__links" aria-label="Links úteis">
+        <li><a href="./index.html">Tickets</a></li>
+        <li><a href="./stats.html">Estatísticas</a></li>
+        <li><a href="./about.html">Sobre</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/stats.js"></script>
+</body>
+</html>

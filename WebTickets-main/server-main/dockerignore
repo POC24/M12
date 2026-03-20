@@ -1,0 +1,17 @@
+# Dependências — reinstaladas dentro do container pelo npm install
+node_modules/
+
+# Segredos — NUNCA entram numa imagem Docker
+.env
+
+# Base de dados — fica na VM, montada como volume externo
+# O container acede a ela via bind mount no docker run
+data/
+
+# Ficheiros de sistema macOS (o teu projeto tem muitos destes)
+.DS_Store
+**/.DS_Store
+
+# Controlo de versões
+.git/
+.gitignore

@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestor de Tickets</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <!-- Ex. 3.2: DOMPurify para sanitização de output e prevenção de XSS -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar para o conteúdo</a>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Navegação principal">
+      <div class="nav__inner">
+        <a class="brand" href="./index.html" aria-label="Ir para a página principal">
+          <span class="brand__mark" aria-hidden="true">📒</span>
+          <span class="brand__text">Gestor de Tickets</span>
+        </a>
+
+        <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navMenu">
+          <span class="sr-only">Abrir menu</span>
+          <span class="burger" aria-hidden="true"></span>
+        </button>
+
+        <ul class="nav__menu" id="navMenu">
+          <li><a class="nav__link is-active" href="./index.html">Tickets</a></li>
+          <li><a class="nav__link" href="./stats.html">Estatísticas</a></li>
+          <li id="logsNavItem" style="display:none"><a class="nav__link" href="./logs.html">Logs</a></li>
+          <li><a class="nav__link" href="./about.html">Sobre</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" class="container">
+    <section class="hero">
+      <div class="hero__text">
+        <h1>Gestor de Tickets</h1>
+      </div>
+
+      <div class="hero__actions">
+        <button class="btn btn--primary" id="openCreateBtn" type="button">
+          + Criar Ticket
+        </button>
+        <button class="btn" id="refreshBtn" type="button">
+          Atualizar
+        </button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Filtros</h2>
+      </div>
+
+      <form class="grid grid--filters" id="filtersForm" novalidate>
+        <div class="field">
+          <label for="filterStatus">Status</label>
+          <select id="filterStatus" name="status">
+            <option value="">Todos</option>
+            <option value="Open">Open</option>
+            <option value="Work in progress">Work in progress</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="filterPriority">Prioridade</label>
+          <select id="filterPriority" name="priority">
+            <option value="">Todas</option>
+            <option value="1">1 - Baixa</option>
+            <option value="2">2 - Média</option>
+            <option value="3">3 - Alta</option>
+            <option value="4">4 - Crítica</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="filterCategory">Categoria</label>
+          <input id="filterCategory" name="category" type="text" placeholder="ex.: Hardware" />
+        </div>
+
+        <div class="field field--actions">
+          <button class="btn btn--primary" type="submit">Aplicar</button>
+          <button class="btn" id="clearFiltersBtn" type="button">Limpar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Lista de Tickets</h2>
+        <div class="panel__meta">
+          <span class="pill" id="ticketsCountPill">0 tickets</span>
+          <span class="pill pill--ghost" id="pagePill">página 1</span>
+        </div>
+      </div>
+
+      <!-- Paginação (Topo) -->
+      <div class="pager" id="ticketsPagerTop" aria-label="Paginação de tickets (topo)">
+        <div class="pager__group">
+          <button class="btn" id="firstPageBtn" type="button" disabled>⏮ Primeira</button>
+          <button class="btn" id="prevPageBtn" type="button" disabled>◀ Anterior</button>
+
+          <div class="pager__numbers" id="pageNumbersTop" aria-label="Páginas">
+            <!-- preenchido por JS (5 páginas) -->
+          </div>
+
+          <button class="btn" id="nextPageBtn" type="button" disabled>Seguinte ▶</button>
+          <button class="btn" id="lastPageBtn" type="button" disabled>Última ⏭</button>
+        </div>
+
+        <div class="pager__jump">
+          <label class="muted" for="pageSelect">Ir para página:</label>
+          <input type="number" id="pageSelect" min="1" value="1" class="input--inline" />
+          <span id="totalPagesPill" class="pill pill--ghost">de 1</span>
+        </div>
+      </div>
+
+      <div class="statusline" aria-live="polite" aria-atomic="true">
+        <span id="loadingInline" class="inline-loading is-hidden">A carregar…</span>
+      </div>
+
+      <div id="ticketsGrid" class="cards" aria-live="polite" aria-busy="false"></div>
+
+      <!-- Paginação (Fundo) -->
+      <div class="pager" id="ticketsPagerBottom" aria-label="Paginação de tickets (fundo)">
+        <div class="pager__group">
+          <button class="btn" id="firstPageBtnBottom" type="button" disabled>⏮ Primeira</button>
+          <button class="btn" id="prevPageBtnBottom" type="button" disabled>◀ Anterior</button>
+
+          <div class="pager__numbers" id="pageNumbersBottom" aria-label="Páginas">
+            <!-- preenchido por JS (5 páginas) -->
+          </div>
+
+          <button class="btn" id="nextPageBtnBottom" type="button" disabled>Seguinte ▶</button>
+          <button class="btn" id="lastPageBtnBottom" type="button" disabled>Última ⏭</button>
+        </div>
+
+        <div class="pager__jump">
+          <label class="muted" for="pageSelectBottom">Ir para página:</label>
+          <input type="number" id="pageSelectBottom" min="1" value="1" class="input--inline" />
+          <span id="totalPagesPillBottom" class="pill pill--ghost">de 1</span>
+        </div>
+      </div>
+
+      <div class="empty is-hidden" id="emptyState">
+        <p><strong>Sem tickets para mostrar.</strong></p>
+      </div>
+    </section>
+
+    <!-- Dialog / Modal -->
+    <div class="modal is-hidden" id="ticketModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal__backdrop" data-close="true"></div>
+      <div class="modal__card" role="document">
+        <div class="modal__header">
+          <h2 id="modalTitle">Criar Ticket</h2>
+          <button class="icon-btn" id="closeModalBtn" type="button" aria-label="Fechar">
+            ✕
+          </button>
+        </div>
+
+        <form id="ticketForm" class="grid grid--form" novalidate>
+          <input type="hidden" id="incidentId" name="incident_id" value="" />
+
+          <!-- Datalists para sugestoes -->
+          <datalist id="ciCatOptions">
+            <option value="Phone">
+            <option value="application">
+            <option value="applicationcomponent">
+            <option value="computer">
+            <option value="database">
+            <option value="displaydevice">
+            <option value="hardware">
+            <option value="networkcomponents">
+            <option value="officeelectronics">
+            <option value="software">
+            <option value="storage">
+            <option value="subapplication">
+          </datalist>
+
+          <datalist id="categoryOptions">
+            <option value="complaint">
+            <option value="incident">
+            <option value="request for change">
+            <option value="request for information">
+          </datalist>
+
+          <datalist id="closureCodeOptions">
+            <option value="Data">
+            <option value="Hardware">
+            <option value="Inquiry">
+            <option value="Kwaliteit van de output">
+            <option value="No error - works as designed">
+            <option value="Operator error">
+            <option value="Other">
+            <option value="Overig">
+            <option value="Questions">
+            <option value="Referred">
+            <option value="Software">
+            <option value="Unknown">
+            <option value="User error">
+            <option value="User manual not used">
+          </datalist>
+
+          <div class="field">
+            <label for="ciCat">CI Categoria *</label>
+            <input id="ciCat" name="ci_cat" type="text" required placeholder="ex.: Computer" list="ciCatOptions" />
+          </div>
+
+          <div class="field">
+            <label for="ciSubcat">CI Subcategoria *</label>
+            <select id="ciSubcat" name="ci_subcat" required>
+              <option value="">Selecionar…</option>
+              <option value="Application Server">Application Server</option>
+              <option value="Automation Software">Automation Software</option>
+              <option value="Banking Device">Banking Device</option>
+              <option value="Citrix">Citrix</option>
+              <option value="Client Based Application">Client Based Application</option>
+              <option value="Controller">Controller</option>
+              <option value="DataCenterEquipment">DataCenterEquipment</option>
+              <option value="Database">Database</option>
+              <option value="Database Software">Database Software</option>
+              <option value="Desktop">Desktop</option>
+              <option value="Desktop Application">Desktop Application</option>
+              <option value="ESX Cluster">ESX Cluster</option>
+              <option value="ESX Server">ESX Server</option>
+              <option value="Encryption">Encryption</option>
+              <option value="Exchange">Exchange</option>
+              <option value="Firewall">Firewall</option>
+              <option value="IPtelephony">IPtelephony</option>
+              <option value="Instance">Instance</option>
+              <option value="KVM Switches">KVM Switches</option>
+              <option value="Keyboard">Keyboard</option>
+              <option value="Laptop">Laptop</option>
+              <option value="Linux Server">Linux Server</option>
+              <option value="MQ Queue Manager">MQ Queue Manager</option>
+              <option value="Monitor">Monitor</option>
+              <option value="Neoview Server">Neoview Server</option>
+              <option value="NonStop Harddisk">NonStop Harddisk</option>
+              <option value="NonStop Server">NonStop Server</option>
+              <option value="NonStop Storage">NonStop Storage</option>
+              <option value="Number">Number</option>
+              <option value="Oracle Server">Oracle Server</option>
+              <option value="Printer">Printer</option>
+              <option value="RAC Service">RAC Service</option>
+              <option value="Router">Router</option>
+              <option value="SAN">SAN</option>
+              <option value="SAP">SAP</option>
+              <option value="Scanner">Scanner</option>
+              <option value="Security Software">Security Software</option>
+              <option value="Server Based Application">Server Based Application</option>
+              <option value="SharePoint Farm">SharePoint Farm</option>
+              <option value="Standard Application">Standard Application</option>
+              <option value="Switch">Switch</option>
+              <option value="System Software">System Software</option>
+              <option value="Tape Library">Tape Library</option>
+              <option value="Thin Client">Thin Client</option>
+              <option value="UPS">UPS</option>
+              <option value="Unix Server">Unix Server</option>
+              <option value="VDI">VDI</option>
+              <option value="VMWare">VMWare</option>
+              <option value="Virtual Tape Server">Virtual Tape Server</option>
+              <option value="Web Based Application">Web Based Application</option>
+              <option value="Windows Server">Windows Server</option>
+              <option value="X86 Server">X86 Server</option>
+              <option value="zOS Cluster">zOS Cluster</option>
+              <option value="zOS Server">zOS Server</option>
+              <option value="zOS Systeem">zOS Systeem</option>
+            </select>
+            <small class="hint">O CI Name será gerado automaticamente.</small>
+          </div>
+
+          <div class="field">
+            <label for="category">Categoria *</label>
+            <input id="category" name="category" type="text" required placeholder="ex.: Incident" list="categoryOptions" />
+          </div>
+
+          <div class="field">
+            <label for="impact">Impacto (0-5) </label>
+            <select id="impact" name="impact" required>
+              <option value="">Selecionar…</option>
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+            <small class="hint"><strong>0</strong> by default.</small>
+          </div>
+
+          <div class="field">
+            <label for="urgency">Urgência (0-5) </label>
+            <select id="urgency" name="urgency" required>
+              <option value="">Selecionar…</option>
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+            <small class="hint"><strong>0</strong> by default.</small>
+          </div>
+
+          <div class="field">
+            <label for="priority">Prioridade (1-4) </label>
+            <select id="priority" name="priority" required>
+              <option value="">Selecionar…</option>
+              <option value="1">1 - Baixa</option>
+              <option value="2">2 - Média</option>
+              <option value="3">3 - Alta</option>
+              <option value="4">4 - Crítica</option>
+            </select>
+            <small class="hint"><strong>1</strong> by default.</small>
+          </div>
+
+          <div class="field">
+            <label for="status">Status (apenas edição)</label>
+            <select id="status" name="status">
+              <option value="">(mantém atual)</option>
+              <option value="Open">Open</option>
+              <option value="Work in progress">Work in progress</option>
+              <option value="Closed">Closed</option>
+            </select>
+            <small class="hint"><strong>Open</strong> by default.</small>
+          </div>
+
+          <div class="field">
+            <label for="closureCode">Closure Code (se fechar)</label>
+            <input id="closureCode" name="closure_code" type="text" placeholder="ex.: Hardware" list="closureCodeOptions" />
+          </div>
+
+          <!-- Ex. 3.2: campo cifrado com AES-256-GCM -->
+          <div class="field field--full">
+            <label for="description">Descrição</label>
+            <textarea id="description" name="description" rows="3"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn--primary" id="submitBtn" type="submit">
+              Guardar
+            </button>
+            <button class="btn" id="cancelEditBtn" type="button">
+              Cancelar
+            </button>
+          </div>
+
+          <div class="form-feedback" aria-live="polite" aria-atomic="true">
+            <span id="formLoading" class="inline-loading is-hidden">A enviar…</span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div class="toasts" id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer__inner">
+      <p class="muted">© <span id="year"></span> Gestor de Tickets — HTML5, CSS3 e JavaScript</p>
+      <ul class="footer__links" aria-label="Links úteis">
+        <li><a href="./index.html">Tickets</a></li>
+        <li><a href="./stats.html">Estatísticas</a></li>
+        <li><a href="./about.html">Sobre</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script type="module" src="./js/index.js"></script>
+</body>
+</html>

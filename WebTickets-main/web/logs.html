@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Audit Logs — Gestor de Tickets</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <style>
+    .logs-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    .logs-table th,
+    .logs-table td { padding: .5rem .75rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .logs-table th { color: var(--muted); font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+    .logs-table tr:hover td { background: var(--surface-2); }
+    .badge--success { color: var(--success); }
+    .badge--fail    { color: var(--danger); }
+    .mono { font-family: monospace; font-size: .8rem; }
+    .empty-logs { text-align: center; padding: 3rem; color: var(--muted); }
+    .refresh-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Saltar para o conteúdo</a>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Navegação principal">
+      <div class="nav__inner">
+        <a class="brand" href="./index.html" aria-label="Ir para a página principal">
+          <span class="brand__mark" aria-hidden="true">📒</span>
+          <span class="brand__text">Gestor de Tickets</span>
+        </a>
+        <button class="nav__toggle" id="navToggle" type="button" aria-expanded="false" aria-controls="navMenu">
+          <span class="sr-only">Abrir menu</span>
+          <span class="burger" aria-hidden="true"></span>
+        </button>
+        <ul class="nav__menu" id="navMenu">
+          <li><a class="nav__link" href="./index.html">Tickets</a></li>
+          <li><a class="nav__link" href="./stats.html">Estatísticas</a></li>
+          <li><a class="nav__link is-active" href="./logs.html">Logs</a></li>
+          <li><a class="nav__link" href="./about.html">Sobre</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" class="container">
+    <section class="hero">
+      <div class="hero__text">
+        <h1>Audit Logs</h1>
+        <p class="muted">Registo de auditoria — últimas 100 ações (só admins)</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Registos</h2>
+        <div class="panel__meta">
+          <span class="pill" id="countPill">—</span>
+        </div>
+      </div>
+
+      <div class="refresh-bar">
+        <button class="btn" id="refreshBtn" type="button">Atualizar</button>
+        <span class="muted" id="lastRefresh" style="font-size:.8rem;"></span>
+      </div>
+
+      <div id="logsContainer">
+        <p class="muted" style="padding:1rem">A carregar…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer__inner">
+      <p class="muted">© <span id="year"></span> Gestor de Tickets</p>
+      <ul class="footer__links" aria-label="Links úteis">
+        <li><a href="./index.html">Tickets</a></li>
+        <li><a href="./stats.html">Estatísticas</a></li>
+        <li><a href="./logs.html">Logs</a></li>
+        <li><a href="./about.html">Sobre</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { setupNavbar, setYear } from './js/ui.js';
+    import { apiFetch } from './js/api.js';
+
+    setupNavbar();  // redireciona se não estiver autenticado
+    setYear();
+
+    const container   = document.getElementById('logsContainer');
+    const countPill   = document.getElementById('countPill');
+    const lastRefresh = document.getElementById('lastRefresh');
+
+    const ACTION_LABELS = {
+      'login':           'Login',
+      'register':        'Registo',
+      'logout':          'Logout',
+      'change-password': 'Alteração de password',
+      'create-secret':   'Criação de segredo',
+      'delete-secret':   'Remoção de segredo',
+    };
+
+    function resultBadge(result) {
+      const cls = result === 'success' ? 'badge--success' : 'badge--fail';
+      const label = result === 'success' ? '✓ sucesso' : '✗ falha';
+      return `<span class="${cls}">${label}</span>`;
+    }
+
+    function renderTable(logs) {
+      if (!logs.length) {
+        container.innerHTML = '<p class="empty-logs">Sem registos de auditoria ainda.</p>';
+        countPill.textContent = '0 registos';
+        return;
+      }
+
+      countPill.textContent = `${logs.length} registo(s)`;
+
+      const rows = logs.map(l => `
+        <tr>
+          <td class="mono">${l.timestamp ?? '—'}</td>
+          <td>${l.username ?? '<em class="muted">anónimo</em>'}</td>
+          <td>${ACTION_LABELS[l.action] ?? l.action}</td>
+          <td class="mono" style="color:var(--muted)">${l.resource ?? '—'}</td>
+          <td>${resultBadge(l.result)}</td>
+          <td class="mono" style="color:var(--muted)">${l.ip_address ?? '—'}</td>
+        </tr>`).join('');
+
+      container.innerHTML = `
+        <div style="overflow-x:auto">
+          <table class="logs-table" aria-label="Tabela de audit logs">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Utilizador</th>
+                <th>Ação</th>
+                <th>Recurso</th>
+                <th>Resultado</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    async function loadLogs() {
+      container.innerHTML = '<p class="muted" style="padding:1rem">A carregar…</p>';
+      try {
+        const logs = await apiFetch('/system/logs');
+        renderTable(logs);
+        lastRefresh.textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-PT')}`;
+      } catch (err) {
+        if (err.status === 403) {
+          container.innerHTML = '<p class="empty-logs" style="color:var(--danger)">Acesso negado. Esta página é exclusiva para administradores.</p>';
+        } else {
+          container.innerHTML = `<p class="empty-logs" style="color:var(--danger)">Erro ao carregar logs: ${err.message}</p>`;
+        }
+        countPill.textContent = '—';
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadLogs);
+    loadLogs();
+  </script>
+</body>
+</html>
